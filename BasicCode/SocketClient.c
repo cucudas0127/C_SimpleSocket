@@ -161,8 +161,12 @@ void  main(void)
 {
     //---------------------Config--------------------
     // Config Serial Port
-    char* ip_addr = "127.0.0.1";
-
+    char* server_addr = "127.0.0.1";
+    int   server_port = 8600;
+  
+    SCK_OpenSocket(server_addr,server_port);
+  
+  
     // Config Send Packet
     int   send_packet_len = 3;
 
