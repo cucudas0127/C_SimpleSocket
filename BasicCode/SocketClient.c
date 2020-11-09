@@ -6,118 +6,64 @@
 // OS : ubuntu 18.04
 //-----------------------------------------------------------------------------
 #include <arpa/inet.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #define C_FAIL    -1
-#define C_SUCCESS 1
-
-
-//-----------------------------------------------------------------------------
-// DESCRIPTS  :Setting IP Address to Socket
-//-----------------------------------------------------------------------------
-int SCK_SetIPAddress(char *sAddr)
-{
-  // Check IP format   
-  if(strlen(sAddr) < 7)     return C_FAIL;   // C_FAIL      // 1.1.1.1
-  //if(!isdigit(sAddr))    return -1;   // 1st Char is not Letter
-
-  strcpy(stSocket.Config.sIPAddr, sAddr);
-  //printf("IPAddr = %s\n",stSocket.Config.sIPAddr);
-  return C_SUCCESS; // C_SUCCESS
-}
-
-//-----------------------------------------------------------------------------
-// DESCRIPTS  :Setting PORT to Socket
-//-----------------------------------------------------------------------------
-int SCK_SetPort(unsigned int iPort)
-{
-  // Check ...
-  if(iPort<0||65535<iPort)          return C_FAIL;   // C_FAIL     if port isnt num
-
-  stSocket.Config.iPort = iPort;
-  return C_SUCCESS; // C_SUCCESS
-}
-
-
+#define C_SUCCESS 0
 
 
 //-----------------------------------------------------------------------------
 // DESCRIPTS  : Create & Open Socket 
 //-----------------------------------------------------------------------------
-void SCK_OpenSocket(char *ip_addr, unsigned int ip_port)
+int OpenSocket(char *ip_addr, unsigned int ip_port)
 {
     int socket_fd;
+    int itmp;
     int vOpt = 1;       // OptVal = TRUE
-    //VCL_PrintfXY(1,1,"%3d",110);
 
     // Create TCP/IP Socket & Init
     socket_fd = socket(AF_INET, SOCK_STREAM, 0);           
-    //VCL_PrintfXY(1,1,"%3d",111);
 
-    if(socket_fd < 0)  { SCK.eHandler.iErr = SCK_C_ERR_CONNECT; return;  }
-    //else                    { printf("[SCK] Socket successfully created..\n");  }
-    //VCL_PrintfXY(1,1,"%3d",112);
+    if(socket_fd < 0)    return C_FAIL;
+    else                 printf("Socket successfully created..\n");
 
     bzero(&stSocket.HostAddr, sizeof(struct sockaddr_in));
-    //VCL_PrintfXY(1,1,"%3d",113);
 
     stSocket.HostAddr.sin_family      = AF_INET;
     stSocket.HostAddr.sin_addr.s_addr = inet_addr(stSocket.Config.sIPAddr);
     stSocket.HostAddr.sin_port        = htons(stSocket.Config.iPort);
-    //printf("stSocket Sockfd   %d\n",socket_fd);
-    //VCL_PrintfXY(1,1,"%3d",114);
 
-    if(setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &vOpt, sizeof(vOpt)) == -1)  
-    { SCK.eHandler.iErr = SCK_C_ERR_CONNECT; return;  } 
-    //VCL_PrintfXY(1,1,"%3d",115);
+    itmp = setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &vOpt, sizeof(vOpt);
+
+    if(itmp != 0)  return C_FAIL;  
     
-    SCK.fConnectInfo = connect(socket_fd, (struct sockaddr  *)&stSocket.HostAddr, sizeof(stSocket.HostAddr));
-    //printf("ConnectInfo   %d\n",SCK.fConnectInfo );
+    itmp =connect(socket_fd, (struct sockaddr  *)&stSocket.HostAddr, sizeof(stSocket.HostAddr);
+    if(itmp != 0 ) return C_FAIL;
 
-    if(SCK.fConnectInfo != SCK_C_CONNECT_SUCCESS)                  
-    { SCK.eHandler.iErr = SCK_C_ERR_CONNECT; return;} 
+
     // Open Success
-    //VCL_PrintfXY(1,1,"%3d",116);
-
-    SCK.eHandler.iErr =SCK_C_ERR_NONE;     //   { printf("connected to the server..\n"); }
-
-}
-
-//-----------------------------------------------------------------------------
-// DESCRIPTS  :Initialize Socket [IP Address, Port] and Open Socket
-//-----------------------------------------------------------------------------
-void SCK_Init(char *ip_addr, unsigned int ip_port)
-{
-  memset(&stSocket, 0,sizeof(stSCK_Socket));
-
-  // Set Dest. IP Address & Port Number
-  if(SCK_SetIPAddress(ip_addr) < 0 )     {SCK.eHandler.iErr=SCK_C_ERR_Init; }     
-  if(SCK_SetPort(ip_port) < 0 )           {SCK.eHandler.iErr=SCK_C_ERR_Init; }  
-  // Init System (Socket) 
-
-  SCK_OpenSocket();               // Open / Reopen Socket
-  //SCK.eHandler.iErr =SCK_C_ERR_NONE;
+    printf("Socket successfully connected..\n");
+    return C_SUCCESS;
 
 }
+
 
 
 //-----------------------------------------------------------------------------
 // DESCRIPTS  :Send data to server 
 //-----------------------------------------------------------------------------
-void SCK_SendData(void)
+int SendData_toServer(int sock_fd, char *tx_buf,int tx_len)
 {
   int itmp; 
 
   // Send Packet
-  itmp = send(stSocket.Sockfd, stSocket.TxBuf, stSocket.nTxDataSize, MSG_NOSIGNAL);
-  stSocket.fTxActivate = 0;  //DeActivate
-
+  itmp = send(sock_fd, tx_buf, tx_len, MSG_NOSIGNAL);
 
   // Check Tx Status
-  if(itmp < 0)  { SCK.eHandler.iErr=SCK_C_ERR_SEND;          }
-  else          { TaskHandler_Make_Under_999(&SCK.nTRX.nTx); }
+  if(itmp < 0)  return C_FAIL;   
+  else          return C_SUCCESS; 
 }
 
 
@@ -164,7 +110,6 @@ void  main(void)
     char* server_addr = "127.0.0.1";
     int   server_port = 8600;
   
-    SCK_OpenSocket(server_addr,server_port);
   
   
     // Config Send Packet
@@ -177,8 +122,10 @@ void  main(void)
     // Default rxbuf size : 128
     //================================================
 
-/*
     // Socket Open
+    OpenSocket(server_addr,server_port);
+
+/*
     SCK_OpenSocket();
 
     // Data Send
