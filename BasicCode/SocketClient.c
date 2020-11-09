@@ -9,10 +9,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <fcntl.h>         // O_WRONLY
+#include <unistd.h>        // write(), close()
+
 
 #define C_FAIL    -1
 #define C_SUCCESS 0
 
+#define MAX_RX_BUR_SIZE  128
+
+// Server's Host Address 
+struct sockaddr_in	    HostAddr;                   
 
 //-----------------------------------------------------------------------------
 // DESCRIPTS  : Create & Open Socket 
@@ -29,23 +38,23 @@ int OpenSocket(char *ip_addr, unsigned int ip_port)
     if(socket_fd < 0)    return C_FAIL;
     else                 printf("Socket successfully created..\n");
 
-    bzero(&stSocket.HostAddr, sizeof(struct sockaddr_in));
+    bzero(&HostAddr, sizeof(struct sockaddr_in));
 
-    stSocket.HostAddr.sin_family      = AF_INET;
-    stSocket.HostAddr.sin_addr.s_addr = inet_addr(stSocket.Config.sIPAddr);
-    stSocket.HostAddr.sin_port        = htons(stSocket.Config.iPort);
+    HostAddr.sin_family      = AF_INET;
+    HostAddr.sin_addr.s_addr = inet_addr(ip_addr);
+    HostAddr.sin_port        = htons(ip_port);
 
-    itmp = setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &vOpt, sizeof(vOpt);
+    itmp = setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &vOpt, sizeof(vOpt));
 
     if(itmp != 0)  return C_FAIL;  
     
-    itmp =connect(socket_fd, (struct sockaddr  *)&stSocket.HostAddr, sizeof(stSocket.HostAddr);
+    itmp =connect(socket_fd, (struct sockaddr  *)&HostAddr, sizeof(HostAddr));
     if(itmp != 0 ) return C_FAIL;
 
 
     // Open Success
     printf("Socket successfully connected..\n");
-    return C_SUCCESS;
+    return socket_fd;
 
 }
 
@@ -73,29 +82,44 @@ int SendData_toServer(int sock_fd, char *tx_buf,int tx_len)
 //-----------------------------------------------------------------------------
 // DESCRIPTS  :Recive data from server 
 //-----------------------------------------------------------------------------
-void SCK_RecvPacket(int sock_fd, char *rx_buf, int rx_buf_size)
+int SCK_RecvPacket(int sock_fd, char *rx_buf, int rx_buf_size)
 {
   int  	    nData;
-  int		hostAddr_size = sizeof(struct sockaddr_in);
+  int	    	hostAddr_size = sizeof(struct sockaddr_in);
   struct    timeval  timeOut;
   fd_set  	readFds ;
   
   memset(rx_buf, 0, rx_buf_size);
 
   // Set 1ms Timeout counter
+  // Just wait 1 msecond and exit
   timeOut.tv_sec  = 0;
   timeOut.tv_usec = 1000;   
 
   FD_ZERO(&readFds);
   FD_SET(sock_fd, &readFds);
 
+
+
+  // if Recivedata Exist
   if(select(sock_fd+1, &readFds, NULL, NULL, &timeOut) > 0) 
   {
-    nData = recvfrom(sock_fd, rx_buf[0], rx_buf_size, 0,
-                     (struct sockaddr *)&stSocket.HostAddr, &hostAddr_size);
-
+    nData = recvfrom(sock_fd, rx_buf, rx_buf_size, 0,
+                     (struct sockaddr *)&HostAddr, &hostAddr_size);
+    return C_SUCCESS;
   }  
+  else return C_FAIL;
 
+}
+
+
+//-----------------------------------------------------------------------------
+// DESCRIPTS  :Close the Socket
+//-----------------------------------------------------------------------------
+void CloseSocket(int sock_fd)
+{
+  if(sock_fd > 0 )              
+    close(sock_fd);
 }
 
 
@@ -110,33 +134,26 @@ void  main(void)
     char* server_addr = "127.0.0.1";
     int   server_port = 8600;
   
+    char* send_data="hello world!!";
   
-  
-    // Config Send Packet
-    int   send_packet_len = 3;
-
-
-
-    // if you want changing rx_buf size 
-    // you can config {MAX_RX_BUF_SIZE} in header.h
-    // Default rxbuf size : 128
     //================================================
+    int   sock_fd, itmp;
+    int   send_data_len;
+    char  rx_buf[MAX_RX_BUR_SIZE] = {0,};
+    send_data_len = strlen(send_data);
 
     // Socket Open
-    OpenSocket(server_addr,server_port);
-
-/*
-    SCK_OpenSocket();
+    sock_fd = OpenSocket(server_addr,server_port);
+    if(sock_fd == C_FAIL) return;
 
     // Data Send
-    SCK_SendData();            
+    itmp = SendData_toServer(sock_fd, send_data, send_data_len);
+    if(itmp != C_FAIL) printf("Send Data Success!\n");
 
     // Recv Packet
-    SCK_RecvPacket();
+    SCK_RecvPacket(sock_fd, rx_buf, MAX_RX_BUR_SIZE);
 
     // Socket Close
-    SCK_Finalize();
+    CloseSocket(sock_fd);
 
-
-*/
 }
