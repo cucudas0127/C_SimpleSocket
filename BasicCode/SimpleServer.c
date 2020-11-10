@@ -16,13 +16,16 @@
 #include <netinet/in.h>
 
 #define vSvrMax 1024
-#define vSvrPort 8200
-#define fSuccess 0
-#define fFail 1
+
+
+#define C_SUCCESS 0
+#define C_FAIL 1
 
 int flag = 0;
 char message[] = "Mr.Server said you rock!";
-
+    
+    
+struct sockaddr_in st_server, st_client;
 //-----------------------------------------------------------------------------
 // Function descripts : Read Buffer
 //-----------------------------------------------------------------------------
@@ -46,58 +49,80 @@ void Svr_ReadBuff(int vSvrFd)
 
 }
 
+
+
+//-----------------------------------------------------------------------------
+// DESCRIPTS  : Create & Open Socket 
+//-----------------------------------------------------------------------------
+int OpenSocket_Server(int ip_port)
+{
+    int socket_fd;
+    int itmp;
+
+    // Create TCP/IP Socket & Init
+    socket_fd = socket(AF_INET, SOCK_STREAM, 0);           
+
+    if(socket_fd < 0)    return C_FAIL;
+    else                 printf("Socket successfully created..\n");
+
+    bzero(&st_server, sizeof(st_server));
+
+
+    st_server.sin_family = AF_INET;
+    st_server.sin_addr.s_addr = htonl(INADDR_ANY);
+    st_server.sin_port = htons(ip_port);    
+
+
+    itmp = bind(vSvrFd, (struct sockaddr *)&st_server, sizeof(st_server));
+    if( itmp != 0)  return C_FAIL;
+    else            printf("Socket successfully binded..\n");
+
+    return socket_fd;
+
+}
+
+
 int main()
 {
-    int vSvrFd, vSvrCntFd, vLen;
-    struct sockaddr_in stSvrAddr, stClntAddr;
 
-    vSvrFd = socket(AF_INET, SOCK_STREAM, 0);
+    //---------------------Config--------------------
+    int server_port = 8600;
 
-    if (vSvrFd == -1)
+    //================================================
+    int sock_fd;
+    sock_fd = OpenSocket(server_port);
+
+    if(sock_fd < 0 ) 
     {
-        printf("socket creation failed...\n");
-        return (fFail);
+        print("Socket Open Error...");
+        return;
     }
-    else
-        printf("Socket successfully created..\n");
 
-    bzero(&stSvrAddr, sizeof(stSvrAddr));
 
-    stSvrAddr.sin_family = AF_INET;
-    stSvrAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    stSvrAddr.sin_port = htons(vSvrPort);    
-        if ((bind(vSvrFd, (struct sockaddr *)&stSvrAddr, sizeof(stSvrAddr))) != 0)
+    while (1)
+    {
+        if ((listen(vSvrFd, 5)) != 0)
         {
-            printf("socket bind failed...\n");
+            printf("Listen failed...\n");
             return (fFail);
         }
         else
-            printf("Socket successfully binded..\n");
+            printf("Server listening..\n");
 
-        while (1)
+        vLen = sizeof(st_client);
+        vSvrCntFd = accept(vSvrFd, (struct sockaddr *)&st_client, &vLen);
+
+        if (vSvrCntFd < 0)
         {
-            if ((listen(vSvrFd, 5)) != 0)
-            {
-                printf("Listen failed...\n");
-                return (fFail);
-            }
-            else
-                printf("Server listening..\n");
-
-            vLen = sizeof(stClntAddr);
-            vSvrCntFd = accept(vSvrFd, (struct sockaddr *)&stClntAddr, &vLen);
-
-            if (vSvrCntFd < 0)
-            {
-                printf("server acccept failed...\n");
-                return (fFail);
-            }
-            else
-                printf("server acccept the client...\n");
-
-            Svr_ReadBuff(vSvrCntFd);
-            
+            printf("server acccept failed...\n");
+            return (fFail);
         }
+        else
+            printf("server acccept the client...\n");
+
+        Svr_ReadBuff(vSvrCntFd);
+        
+    }
 
     close(vSvrFd);
 

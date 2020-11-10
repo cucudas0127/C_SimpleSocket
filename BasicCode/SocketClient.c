@@ -26,7 +26,7 @@ struct sockaddr_in	    HostAddr;
 //-----------------------------------------------------------------------------
 // DESCRIPTS  : Create & Open Socket 
 //-----------------------------------------------------------------------------
-int OpenSocket(char *ip_addr, unsigned int ip_port)
+int OpenSocket_Client(char *ip_addr,int ip_port)
 {
     int socket_fd;
     int itmp;
@@ -130,7 +130,7 @@ void CloseSocket(int sock_fd)
 void  main(void)
 {
     //---------------------Config--------------------
-    // Config Serial Port
+    // Enter Server IP 
     char* server_addr = "127.0.0.1";
     int   server_port = 8600;
   
@@ -143,7 +143,7 @@ void  main(void)
     send_data_len = strlen(send_data);
 
     // Socket Open
-    sock_fd = OpenSocket(server_addr,server_port);
+    sock_fd = OpenSocket_Client(server_addr,server_port);
     if(sock_fd == C_FAIL) return;
 
     // Data Send
