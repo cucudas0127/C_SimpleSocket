@@ -63,7 +63,7 @@ int OpenSocket_Client(char *ip_addr,int ip_port)
 //-----------------------------------------------------------------------------
 // DESCRIPTS  :Send data to server 
 //-----------------------------------------------------------------------------
-int SendData_toServer(int sock_fd, char *tx_buf,int tx_len)
+int SendData(int sock_fd, char *tx_buf,int tx_len)
 {
   int itmp; 
 
@@ -82,7 +82,7 @@ int SendData_toServer(int sock_fd, char *tx_buf,int tx_len)
 //-----------------------------------------------------------------------------
 // DESCRIPTS  :Recive data from server 
 //-----------------------------------------------------------------------------
-int SCK_RecvPacket(int sock_fd, char *rx_buf, int rx_buf_size)
+int DataRecived(int sock_fd, char *rx_buf, int rx_buf_size)
 {
   int  	    nData;
   int	    	hostAddr_size = sizeof(struct sockaddr_in);
@@ -147,12 +147,14 @@ void  main(void)
     if(sock_fd == C_FAIL) return;
 
     // Data Send
-    itmp = SendData_toServer(sock_fd, send_data, send_data_len);
+    itmp = SendData(sock_fd, send_data, send_data_len);
     if(itmp != C_FAIL) printf("Send Data Success!\n");
 
     // Recv Packet
-    SCK_RecvPacket(sock_fd, rx_buf, MAX_RX_BUR_SIZE);
-
+    
+    //while(!DataRecived(sock_fd, rx_buf, MAX_RX_BUR_SIZE));
+    DataRecived(sock_fd, rx_buf, MAX_RX_BUR_SIZE);
+    printf("Recived Data : %s",rx_buf);
     // Socket Close
     CloseSocket(sock_fd);
 

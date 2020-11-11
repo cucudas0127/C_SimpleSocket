@@ -22,14 +22,28 @@
 #define C_FAIL 1
 
 int flag = 0;
-char message[] = "Mr.Server said you rock!";
     
     
-struct sockaddr_in st_server, st_client;
+//-----------------------------------------------------------------------------
+// DESCRIPTS  :Send data to server 
+//-----------------------------------------------------------------------------
+int SendData(int sock_fd, char *tx_buf,int tx_len)
+{
+  int itmp; 
+
+  // Send Packet
+  itmp = send(sock_fd, tx_buf, tx_len, MSG_NOSIGNAL);
+
+  // Check Tx Status
+  if(itmp < 0)  return C_FAIL;   
+  else          return C_SUCCESS; 
+}
+
+
 //-----------------------------------------------------------------------------
 // Function descripts : Read Buffer
 //-----------------------------------------------------------------------------
-void Svr_ReadBuff(int vSvrFd)
+void Read_RecivedData(int vSvrFd)
 {
     char cJsnBuff[vSvrMax];
 
@@ -54,7 +68,7 @@ void Svr_ReadBuff(int vSvrFd)
 //-----------------------------------------------------------------------------
 // DESCRIPTS  : Create & Open Socket 
 //-----------------------------------------------------------------------------
-int OpenSocket_Server(int ip_port)
+int OpenSocket_Server(struct sockaddr_in st_server, int ip_port)
 {
     int socket_fd;
     int itmp;
@@ -73,7 +87,7 @@ int OpenSocket_Server(int ip_port)
     st_server.sin_port = htons(ip_port);    
 
 
-    itmp = bind(vSvrFd, (struct sockaddr *)&st_server, sizeof(st_server));
+    itmp = bind(socket_fd, (struct sockaddr *)&st_server, sizeof(st_server));
     if( itmp != 0)  return C_FAIL;
     else            printf("Socket successfully binded..\n");
 
@@ -82,49 +96,53 @@ int OpenSocket_Server(int ip_port)
 }
 
 
-int main()
+void main(void)
 {
 
     //---------------------Config--------------------
     int server_port = 8600;
-
+    char* send_message= "Mr.Server said you rock!";
     //================================================
     int sock_fd;
-    sock_fd = OpenSocket(server_port);
+    struct sockaddr_in st_server, st_client;
+    int itmp,itmp2;
+    sock_fd = OpenSocket_Server(st_server, server_port);
 
     if(sock_fd < 0 ) 
     {
-        print("Socket Open Error...");
+        printf("Socket Open Error...");
         return;
     }
 
 
-    while (1)
+    if ((listen(sock_fd, 5)) != 0)
     {
-        if ((listen(vSvrFd, 5)) != 0)
-        {
-            printf("Listen failed...\n");
-            return (fFail);
-        }
-        else
-            printf("Server listening..\n");
-
-        vLen = sizeof(st_client);
-        vSvrCntFd = accept(vSvrFd, (struct sockaddr *)&st_client, &vLen);
-
-        if (vSvrCntFd < 0)
-        {
-            printf("server acccept failed...\n");
-            return (fFail);
-        }
-        else
-            printf("server acccept the client...\n");
-
-        Svr_ReadBuff(vSvrCntFd);
-        
+        printf("Listen failed...\n");
+        return ;
     }
+    else
+        printf("Server listening..\n");
 
-    close(vSvrFd);
+    itmp = sizeof(st_client);
+    itmp2 = accept(sock_fd, (struct sockaddr *)&st_client, &itmp);
 
-    return 0;
+    if (itmp2 < 0)
+    {
+        printf("server acccept failed...\n");
+        return ;
+    }
+    else
+        printf("server acccept the client...\n");
+    
+    // Read Data
+    Read_RecivedData(itmp2);
+
+    // Send Data
+    SendData(sock_fd,send_message,strlen(send_message));
+
+
+    //close socket
+    close(sock_fd);
+
+    return ;
 }
