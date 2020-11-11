@@ -65,14 +65,14 @@ int OpenSocket_Client(char *ip_addr,int ip_port)
 //-----------------------------------------------------------------------------
 int SendData(int sock_fd, char *tx_buf,int tx_len)
 {
-  int itmp; 
+    int itmp; 
 
-  // Send Packet
-  itmp = send(sock_fd, tx_buf, tx_len, MSG_NOSIGNAL);
+    // Send Packet
+    itmp = send(sock_fd, tx_buf, tx_len, MSG_NOSIGNAL);
 
-  // Check Tx Status
-  if(itmp < 0)  return C_FAIL;   
-  else          return C_SUCCESS; 
+    // Check Tx Status
+    if(itmp < 0)  return C_FAIL;   
+    else          return C_SUCCESS; 
 }
 
 
@@ -82,10 +82,10 @@ int SendData(int sock_fd, char *tx_buf,int tx_len)
 //-----------------------------------------------------------------------------
 // DESCRIPTS  :Recive data from server 
 //-----------------------------------------------------------------------------
-int DataRecived(int sock_fd, char *rx_buf, int rx_buf_size)
+int RecivedData(struct sockaddr_in st_socket,int sock_fd, char *rx_buf, int rx_buf_size)
 {
   int  	    nData;
-  int	    	hostAddr_size = sizeof(struct sockaddr_in);
+  int	      st_socket_size = sizeof(struct sockaddr_in);
   struct    timeval  timeOut;
   fd_set  	readFds ;
   
@@ -102,13 +102,14 @@ int DataRecived(int sock_fd, char *rx_buf, int rx_buf_size)
 
 
   // if Recivedata Exist
-  if(select(sock_fd+1, &readFds, NULL, NULL, &timeOut) > 0) 
-  {
-    nData = recvfrom(sock_fd, rx_buf, rx_buf_size, 0,
-                     (struct sockaddr *)&HostAddr, &hostAddr_size);
-    return C_SUCCESS;
-  }  
-  else return C_FAIL;
+    if(select(sock_fd+1, &readFds, NULL, NULL, &timeOut) > 0) 
+    {
+        nData = recvfrom(sock_fd, rx_buf, rx_buf_size, 0,
+                    (struct sockaddr *)&st_socket, &st_socket_size);
+        return C_SUCCESS;
+    }  
+    else return C_FAIL;
+
 
 }
 
@@ -118,8 +119,8 @@ int DataRecived(int sock_fd, char *rx_buf, int rx_buf_size)
 //-----------------------------------------------------------------------------
 void CloseSocket(int sock_fd)
 {
-  if(sock_fd > 0 )              
-    close(sock_fd);
+    if(sock_fd > 0 )              
+      close(sock_fd);
 }
 
 
@@ -151,10 +152,15 @@ void  main(void)
     if(itmp != C_FAIL) printf("Send Data Success!\n");
 
     // Recv Packet
-    
+    while(1)
+    {
+      if(RecivedData(HostAddr,sock_fd, rx_buf, MAX_RX_BUR_SIZE)==C_SUCCESS)
+          break;
+    }
+    printf("Recived Data : %s\n",rx_buf);
+
     //while(!DataRecived(sock_fd, rx_buf, MAX_RX_BUR_SIZE));
-    DataRecived(sock_fd, rx_buf, MAX_RX_BUR_SIZE);
-    printf("Recived Data : %s",rx_buf);
+
     // Socket Close
     CloseSocket(sock_fd);
 
