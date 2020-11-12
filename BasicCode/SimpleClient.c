@@ -52,12 +52,9 @@ int OpenSocket_Client(char *ip_addr,int ip_port)
 
 
     // Open Success
-    printf("Socket successfully connected..\n");
     return socket_fd;
 
 }
-
-
 
 //-----------------------------------------------------------------------------
 // DESCRIPTS  :Send data to server 
@@ -75,19 +72,17 @@ int SendData(int sock_fd, char *tx_buf,int tx_len)
 }
 
 
-
-
-
 //-----------------------------------------------------------------------------
-// DESCRIPTS  :Recive data from server 
+// DESCRIPTS  :Recive data, dodnt wait for data to be received
 //-----------------------------------------------------------------------------
-int RecivedData(int sock_fd, char *rx_buf, int rx_buf_size)
+int RecivedData_NoWait(int sock_fd, char *rx_buf, int rx_buf_size)
 {
     int  	    nData;
     int	      st_socket_size = sizeof(struct sockaddr_in);
     struct    timeval  timeOut;
     fd_set  	readFds ;
-    
+    char buf[128];
+
     memset(rx_buf, 0, rx_buf_size);
 
     // Set 1ms Timeout counter
@@ -99,12 +94,11 @@ int RecivedData(int sock_fd, char *rx_buf, int rx_buf_size)
     FD_SET(sock_fd, &readFds);
 
 
-
     // if Recivedata Exist
     if(select(sock_fd+1, &readFds, NULL, NULL, &timeOut) > 0) 
     {
         nData = recvfrom(sock_fd, rx_buf, rx_buf_size, 0,
-                    (struct sockaddr *)&HostAddr, &st_socket_size);
+                        (struct sockaddr *)&HostAddr, &st_socket_size);
         return C_SUCCESS;
     }  
     else return C_FAIL;
@@ -112,6 +106,14 @@ int RecivedData(int sock_fd, char *rx_buf, int rx_buf_size)
 
 }
 
+//-----------------------------------------------------------------------------
+// Function descripts : Read Buffer,wait for data to be recieved
+//-----------------------------------------------------------------------------
+void RecivedData_Wait(int sock_fd, char *rx_buf, int rx_buf_size)
+{
+    if(sock_fd > 0)   read(sock_fd, rx_buf, rx_buf_size);
+    
+}
 
 //-----------------------------------------------------------------------------
 // DESCRIPTS  :Close the Socket
@@ -144,22 +146,23 @@ void  main(void)
 
     // Socket Open
     sock_fd = OpenSocket_Client(server_addr,server_port);
-    if(sock_fd == C_FAIL) return;
+    if(sock_fd == C_FAIL) { printf("Socket open Error!\n"); return;}
 
 
     for(int i = 5; i> 0; i--)
     {
       // Data Send
-
       itmp = SendData(sock_fd, send_data, send_data_len);
-      if(itmp != C_FAIL) printf("Send Data Success!\n");
+      if(itmp != C_FAIL){ printf("Send Data Success!\n"); }
+      else              { printf("Send Data Error!\n"); return;}
 
-      // Recv Packet
-
-      while(RecivedData(sock_fd, rx_buf, MAX_RX_BUR_SIZE)==C_SUCCESS);
+      sleep(1);
+      // Read Data [Option : Wait/NoWait]
+      RecivedData_Wait(client_fd, rx_buf,MAX_RX_BUF_SIZE);
+      //while(RecivedData_NoWait(client_fd, rx_buf, MAX_RX_BUF_SIZE)==C_FAIL);
       printf("Recived Data : %s\n",rx_buf);
+
     }
-    //while(!DataRecived(sock_fd, rx_buf, MAX_RX_BUR_SIZE));
 
     // Socket Close
     CloseSocket(sock_fd);

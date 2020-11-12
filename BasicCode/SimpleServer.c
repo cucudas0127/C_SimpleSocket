@@ -15,15 +15,11 @@
 #include <unistd.h>        // write(), close()
 #include <netinet/in.h>
 
-#define vSvrMax 1024
-
 
 #define C_SUCCESS 0
 #define C_FAIL 1
 
-int flag = 0;
-    
-    struct sockaddr_in st_server;
+struct sockaddr_in st_server;
    
 //-----------------------------------------------------------------------------
 // DESCRIPTS  :Send data to server 
@@ -34,7 +30,7 @@ int SendData(int sock_fd, char *tx_buf,int tx_len)
   //printf("Send Data : %s\n",tx_buf);
   
   // Send Packet
-  itmp = send(sock_fd, tx_buf, tx_len);
+  itmp = send(sock_fd, tx_buf, tx_len, MSG_NOSIGNAL);
 
   // Check Tx Status
   if(itmp < 0)  return C_FAIL;   
@@ -43,21 +39,18 @@ int SendData(int sock_fd, char *tx_buf,int tx_len)
 
 
 //-----------------------------------------------------------------------------
-// Function descripts : Read Buffer
+// Function descripts : Read Buffer,wait for data to be recieved
 //-----------------------------------------------------------------------------
-void Read_RecivedData(int vSvrFd)
+void RecivedData_Wait(int sock_fd, char *rx_buf, int rx_buf_size)
 {
-    char cJsnBuff[vSvrMax];
-
-    read(vSvrFd, cJsnBuff, vSvrMax);
-    printf("\n%s\n", cJsnBuff);
-    printf("File received successfully !! \n");
+    if(sock_fd > 0)   read(sock_fd, rx_buf, rx_buf_size);
+    
 }
 
 //-----------------------------------------------------------------------------
-// DESCRIPTS  :Recive data from server 
+// DESCRIPTS  :Recive data, dodnt wait for data to be received
 //-----------------------------------------------------------------------------
-int RecivedData(int sock_fd, char *rx_buf, int rx_buf_size)
+int RecivedData_NoWait(int sock_fd, char *rx_buf, int rx_buf_size)
 {
   int  	    nData;
   int	    hostAddr_size = sizeof(struct sockaddr_in);
@@ -144,8 +137,10 @@ void main(void)
 {
 
     //---------------------Config--------------------
+
     int server_port = 8600;
     char* send_message= "We are connected!!";
+    
     //================================================
     char rx_buf[128]={0,};
     int sock_fd;
@@ -154,30 +149,30 @@ void main(void)
 
     // Open Socket
     sock_fd = OpenSocket_Server(st_server, server_port);
-    if(sock_fd < 0 ) 
-    {
-        printf("server socket Open Error...\n");
-        return;
-    }
+    if(sock_fd < 0 ) { printf("Server Open Error...\n");return; } 
+    else             { printf("Server Open success...\n");}
+
 
 
     // Client Accept
     client_fd = AcceptClient(sock_fd);
-    if( client_fd == C_FAIL)
-    {
-        printf("server accept Error...\n");
-        return;
-    }
+    if( client_fd == C_FAIL) {printf("Server accept Error...\n"); return;}
+    else                     {printf("Connection success...\n");}
 
     for(int i = 5; i> 0; i--)
     {
-        // Read Data
-        //Read_RecivedData(client_fd);
-        while(RecivedData(client_fd, rx_buf, MAX_RX_BUF_SIZE)==C_FAIL);
+        // Read Data [Option : Wait/NoWait]
+        RecivedData_Wait(client_fd, rx_buf,MAX_RX_BUF_SIZE);
+        //while(RecivedData_NoWait(client_fd, rx_buf, MAX_RX_BUF_SIZE)==C_FAIL);
         printf("[%d] Recived Data : %s\n",i,rx_buf);
+        
+        sleep(1);
 
         // Send Data
-        SendData(client_fd,send_message,strlen(send_message));
+        // Data Send
+        itmp = SendData(sock_fd, send_data, send_data_len);
+        if(itmp != C_FAIL){ printf("Send Data Success!\n"); }
+        else              { printf("Send Data Error!\n"); return;}
     }
 
     //close socket
