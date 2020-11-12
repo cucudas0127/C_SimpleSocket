@@ -5,14 +5,7 @@
 // Environment ----------------------------------------------------------------
 // OS : ubuntu 18.04
 //-----------------------------------------------------------------------------
-#include <arpa/inet.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <fcntl.h>         // O_WRONLY
-#include <unistd.h>        // write(), close()
+#include "SimpleClient.h"
 
 
 #define C_FAIL    -1
