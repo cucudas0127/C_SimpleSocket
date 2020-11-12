@@ -170,7 +170,7 @@ void main(void)
 
         // Send Data
         // Data Send
-        itmp = SendData(sock_fd, send_data, send_data_len);
+        itmp = SendData(sock_fd, send_message, strlen(send_message));
         if(itmp != C_FAIL){ printf("Send Data Success!\n"); }
         else              { printf("Send Data Error!\n"); return;}
     }

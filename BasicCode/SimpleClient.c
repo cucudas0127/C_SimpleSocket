@@ -18,7 +18,7 @@
 #define C_FAIL    -1
 #define C_SUCCESS 0
 
-#define MAX_RX_BUR_SIZE  128
+#define MAX_RX_BUF_SIZE  128
 
 // Server's Host Address 
 struct sockaddr_in	    HostAddr;                   
@@ -140,9 +140,7 @@ void  main(void)
   
     //================================================
     int   sock_fd, itmp;
-    int   send_data_len;
-    char  rx_buf[MAX_RX_BUR_SIZE] = {0,};
-    send_data_len = strlen(send_data);
+    char  rx_buf[MAX_RX_BUF_SIZE] = {0,};
 
     // Socket Open
     sock_fd = OpenSocket_Client(server_addr,server_port);
@@ -152,14 +150,14 @@ void  main(void)
     for(int i = 5; i> 0; i--)
     {
       // Data Send
-      itmp = SendData(sock_fd, send_data, send_data_len);
+      itmp = SendData(sock_fd, send_data, strlen(send_data));
       if(itmp != C_FAIL){ printf("Send Data Success!\n"); }
       else              { printf("Send Data Error!\n"); return;}
 
       sleep(1);
       // Read Data [Option : Wait/NoWait]
-      RecivedData_Wait(client_fd, rx_buf,MAX_RX_BUF_SIZE);
-      //while(RecivedData_NoWait(client_fd, rx_buf, MAX_RX_BUF_SIZE)==C_FAIL);
+      RecivedData_Wait(sock_fd, rx_buf,MAX_RX_BUF_SIZE);
+      //while(RecivedData_NoWait(sock_fd, rx_buf, MAX_RX_BUF_SIZE)==C_FAIL);
       printf("Recived Data : %s\n",rx_buf);
 
     }
