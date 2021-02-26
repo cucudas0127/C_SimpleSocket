@@ -51,7 +51,7 @@ int main (void)
         return -1;
     }
 
-    // set the Ip address to be transmitted(local ip)
+    // set the Ip address for ethernet port(local ip)
     local_addr.s_addr = inet_addr(local_ip);    
     if(setsockopt(sockfd, IPPROTO_IP, IP_MULTICAST_IF,(char *)&local_addr, sizeof(local_addr))<0)
     {
