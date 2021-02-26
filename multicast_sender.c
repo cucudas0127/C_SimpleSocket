@@ -1,4 +1,3 @@
-/* Send Multicast Datagram code example. */
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -7,28 +6,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-
+#include <unistd.h>
 
 int main (void)
 
 {
-    int sockfd;
-   	struct sockaddr_in sockaddr;	
-    struct in_addr     localInterface;
-    int send_len;
-    char *send_sentence="Hello multicast";
-
+  
+    int sockfd, send_len;
+   	struct sockaddr_in multicast_addr;	
+    struct in_addr     local_addr;
 
     // Max Router Num
     char ttl=5;
   
     // multicast addr
-    char *multicastAddr = "225.192.0.10";
-    int   multicastPort = 50000;
-    char *local_Ip      = "192.168.0.10";
+    char *multicast_ip = "225.192.0.10";
+    int   multicast_port  = 50000;
 
+    // send device ip address [current computer]
+    char *local_ip      = "10.1.16.104";
 
+    // sending message
+    char *send_message ="Hello multicast";
+
+    // generatae socket
     sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (sockfd < 0) 
     {
@@ -36,10 +37,12 @@ int main (void)
         return -1;
     }
 
-    sockaddr.sin_family      = AF_INET;
-    sockaddr.sin_addr.s_addr = inet_addr(multicastAddr);
-    sockaddr.sin_port        = htons(multicastPort);
+    // setting multicast address
+    multicast_addr.sin_family      = AF_INET;
+    multicast_addr.sin_addr.s_addr = inet_addr(multicast_ip);
+    multicast_addr.sin_port        = htons(multicast_port);
 
+    // set the maximum number of routers.
     if(setsockopt(sockfd, IPPROTO_IP, IP_MULTICAST_TTL,(void *)&ttl,sizeof(ttl))<0)
     {
         printf("Socket setsickopt error.[ttl]\n");
@@ -48,8 +51,9 @@ int main (void)
         return -1;
     }
 
-    localInterface.s_addr = inet_addr(local_Ip);    
-    if(setsockopt(sockfd, IPPROTO_IP, IP_MULTICAST_IF,(char *)&localInterface, sizeof(localInterface))<0)
+    // set the Ip address to be transmitted(local ip)
+    local_addr.s_addr = inet_addr(local_ip);    
+    if(setsockopt(sockfd, IPPROTO_IP, IP_MULTICAST_IF,(char *)&local_addr, sizeof(local_addr))<0)
     {
         printf("Socket setsickopt error.[Interface]\n");
         close(sockfd);
@@ -72,21 +76,17 @@ int main (void)
     // this and choose a concrete outgoing interface for a given socket 
     // with this option.    
    
-
-
-    // groupSock sockaddr structure. 
-
-    // int datalen = 1024;
-    send_len = sendto(sockfd, send_sentence, strlen(send_sentence), 0, (struct sockaddr*)&sockaddr, sizeof(sockaddr));
+    // send message
+    send_len = sendto(sockfd, send_message, strlen(send_message), 0, (struct sockaddr*)&multicast_addr, sizeof(multicast_addr));
     printf("send len : %d\n",send_len);
     if( send_len < 0 )
     {
         printf("Sending multicast message error");
     }
     else
-        printf("Sending multicast message...OK\n");
+        printf("Sending multicast message...Success\n");
 
-    // Try the re-read from the socket if the loopback is not disable
+
+    close(sockfd);
     return 0;
 }
-
